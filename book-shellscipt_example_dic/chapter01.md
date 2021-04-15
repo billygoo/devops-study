@@ -39,8 +39,10 @@ if [ -n "$separator" ]; then
 fi
 ```
 
-
-
+- `getopts`를 쓸 때 `while`문 조건식으로 `getopts`쓰고 `while` 루프 내부의 `case` 문으로 판단한다.
+- `getopts` 명령어로 옵션 해석이 끝난 다음에 셸 변수 `OPTIND`는 '다음에 처리할 위치 파라미터 번호'를 나타낸다.  
+- 같이 읽어보기 
+  - https://mug896.github.io/bash-shell/getopts.html
 
 # 002 키보드에서 Ctrl+C 를 입력했을 때 현재 상태를 출력하며 종료하기 
 ```bash
@@ -59,6 +61,12 @@ do
 done
 ```
 
+- `trap` 명령어 서식은 '' 안에 하고 싶은 처리, 그 다음에 제어하고 싶은 시그널명을 씁니다. 
+```bash 
+trap ' date; exit ' INT
+----  -----------   ---
+명령   실행 코드      시그널
+```
 
 # 003 키보드에서 사용자 키 입력을 획득해서 변수값으로 이용하기 
 ```bash 
@@ -136,9 +144,11 @@ do
     ls $dir
 done < question.txt
 ``` 
+- `read` 명령어를 활용해 파일을 읽는 도중에 `read` 명령어를 활용해 키보드 입려을 처리할 수 있다. 
+- `read` 명령어는 표준 입력(키보드에서 입력)을 읽어서 그 값을 셸 변수에 대입하지만 파일 내용을 한 줄씩 읽어서 셸 변수에 대입할 수도 있습니다. 
 
-- read명령어는 표준 입력(키보드에서 입력)을 읽어서 그 값을 셸 변수에 대입하지만 파일 내용을 한 줄씩 읽어서 셸 변수에 대입할 수도 있습니다. 
-
+- 같이 읽어보기 
+  - 명령어 치환 : https://wiki.kldp.org/HOWTO/html/Adv-Bash-Scr-HOWTO/commandsub.html
 
 # 007 선택식 메뉴를 표시해서 입력된 숫자 값 처리하기
 ```bash 
@@ -171,6 +181,7 @@ do
 done
 ```
 
+- `while` 문을 활용해 menu 처리 스크립트를 작성할 수 있다. 
 - case문 마지막에 *를 쓰면 지금까지의 조건에 일치하지 않는 값을 처리합니다. 스크립트가 의도하지 않은 동작을 하지 않도록 이런 에러 처리를 잊지 맙시다. 
 
 
@@ -192,6 +203,9 @@ echo "Script End"
 ```
   \033[파마리터m 문자열 \033[0m
 ```
+- 같이 읽어보기
+  - Escape Sequences : https://mug896.github.io/bash-shell/escape_sequences.html
+
 
 # 009 달력을 이용해 특정 날짜의 로그 파일 삭제하기 
 ```bash 
@@ -219,6 +233,8 @@ rm -i ${LOG_DIR}/app_log.$date_str
 rm -f cal.tmp 
 ```
 
+- `dialog`를 이용해서 Console에 창을 표시할 수 있다. 
+ 
 
 # 010 파일 압축 시 실행 상태를 표시하는 진행바 표시하기
 ```bash
@@ -230,4 +246,14 @@ cd $DATA_DIR
 tar cf - bigfile1.dat bigfile2.dat | pv | gzip > archive.tar.gz
 ```
 
-
+- pv 명령어에 모니터링하고 싶은 출력을 파이프(`|`)를 이용해 진생상황을 표시할 수 있다. 
+```
+* Syntax pv command
+pv fileName
+pv OPTIONS fileName
+pv fileName > outputFileName
+pv OPTIONS | command > outputFileName
+command1 | pv | command2
+```
+- 같이 읽어보기 
+  - pv : https://www.geeksforgeeks.org/pv-command-in-linux-with-examples/
