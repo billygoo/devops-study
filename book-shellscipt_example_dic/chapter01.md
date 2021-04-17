@@ -44,6 +44,7 @@ fi
 - 같이 읽어보기 
   - https://mug896.github.io/bash-shell/getopts.html
 
+
 # 002 키보드에서 Ctrl+C 를 입력했을 때 현재 상태를 출력하며 종료하기 
 ```bash
 #!/bin/sh
@@ -67,6 +68,20 @@ trap ' date; exit ' INT
 ----  -----------   ---
 명령   실행 코드      시그널
 ```
+
+- 다음은 프로그래밍 하면서 자주 만나는 시그널 들입니다.
+
+|Signal Name|Signal Number|Description|
+|---|---|---|
+|SIGHUP|1|Hang up detected on controlling terminal or death of controlling process|
+|SIGINT|2|Issued if the user sends an interrupt signal (Ctrl + C)|
+|SIGQUIT|3|Issued if the user sends a quit signal (Ctrl + D)|
+|SIGFPE|8|Issued if an illegal mathematical operation is attempted|
+|SIGKILL|9|If a process gets this signal it must quit immediately and will not perform any clean-up operations|
+|SIGALRM|14|Alarm clock signal (used for timers)|
+|SIGTERM|15|Software termination signal (sent by kill by default)|
+https://www.tutorialspoint.com/unix/unix-signals-traps.htm
+
 
 # 003 키보드에서 사용자 키 입력을 획득해서 변수값으로 이용하기 
 ```bash 
@@ -99,6 +114,10 @@ echo
 wget -q -password="$password" "ftp://${username}@${hostname}/filename.txt
 ``` 
 
+- `stty`는 터미널 인터페이스의 옵션을 설정 할 수 있는 유틸리티 입니다. 
+- `stty` 명령어로 `-echo`를 지정하면 echo back이 되지 않아서 입력한 문자가 화면에 표시되지 않습니다. (_** Echo back : 반향, 메아리_)
+
+
 # 005 사용자 키 입력을 한 글자만 받기(Enter 키 불필요)
 ```bash
 #!/bin/sh
@@ -130,6 +149,13 @@ case "$char" in
 esac
 ``` 
 
+- `stty` 명령어로 터미널을 `raw` 모드로 하면 키 버퍼를 처리하지 않으므로 문자마다 처리할 수 있습니다. 
+- 단, `stty` 명령어로 옵션을 변경하면 기존의 옵션이 지워지므로 나중에 설정을 원래대로 돌릴 수 있도록 현재 상태를 저장할 필요가 있습니다. 
+- `dd` 명령어를 이용해서 스탠다드 인풋을 스탠다드 아웃풋으로 복사할 수 있습니다. 
+  - https://linuxconfig.org/how-dd-command-works-in-linux-with-examples
+    - 주로 master boot record를 백업할 때 사용한다.
+    - 또한 복사할 때 특정 블록을 스킵해 복사하기 위해 사용하기 한다. (ex. grub bootloader)
+
 
 # 006 파일을 읽어서 처리할 때 키보드에서 입력받기 
 ```bash 
@@ -144,11 +170,11 @@ do
     ls $dir
 done < question.txt
 ``` 
-- `read` 명령어를 활용해 파일을 읽는 도중에 `read` 명령어를 활용해 키보드 입려을 처리할 수 있다. 
+- `read` 명령어를 활용해 파일을 읽는 도중에 `read` 명령어를 활용해 키보드 입력을 처리할 수 있다. 
 - `read` 명령어는 표준 입력(키보드에서 입력)을 읽어서 그 값을 셸 변수에 대입하지만 파일 내용을 한 줄씩 읽어서 셸 변수에 대입할 수도 있습니다. 
-
 - 같이 읽어보기 
   - 명령어 치환 : https://wiki.kldp.org/HOWTO/html/Adv-Bash-Scr-HOWTO/commandsub.html
+
 
 # 007 선택식 메뉴를 표시해서 입력된 숫자 값 처리하기
 ```bash 
@@ -182,7 +208,7 @@ done
 ```
 
 - `while` 문을 활용해 menu 처리 스크립트를 작성할 수 있다. 
-- case문 마지막에 *를 쓰면 지금까지의 조건에 일치하지 않는 값을 처리합니다. 스크립트가 의도하지 않은 동작을 하지 않도록 이런 에러 처리를 잊지 맙시다. 
+- case문 마지막에 `*`를 쓰면 지금까지의 조건에 일치하지 않는 값을 처리합니다. 스크립트가 의도하지 않은 동작을 하지 않도록 이런 에러 처리를 잊지 맙시다. 
 
 
 # 008 표시 문자 색 변경하기 
