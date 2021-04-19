@@ -137,7 +137,7 @@ eval $(sed -n "s/<code>\(.*\)<\/code>/\1/p" command.htm)
 #!/bin/sh
 
 today="20150125"
-# 셸 변수가 today가 확장됨
+# 쉘 변수가 today가 확장됨
 wc -l ${today}_log
 ```
 

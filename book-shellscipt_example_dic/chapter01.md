@@ -27,7 +27,7 @@ done
 shift $(expr $OPTIND - 1)
 path="$1"
 
-# -a 옵션이 지정되었는지 셸 변수 a_flag값으로 판단하기
+# -a 옵션이 지정되었는지 쉘 변수 a_flag값으로 판단하기
 if [ $a_flag -eq 1 ]; then
     ls -a -- "$path"
 else
@@ -40,7 +40,7 @@ fi
 ```
 
 - `getopts`를 쓸 때 `while`문 조건식으로 `getopts`쓰고 `while` 루프 내부의 `case` 문으로 판단한다.
-- `getopts` 명령어로 옵션 해석이 끝난 다음에 셸 변수 `OPTIND`는 '다음에 처리할 위치 파라미터 번호'를 나타낸다.  
+- `getopts` 명령어로 옵션 해석이 끝난 다음에 쉘 변수 `OPTIND`는 '다음에 처리할 위치 파라미터 번호'를 나타낸다.  
 - 같이 읽어보기 
   - https://mug896.github.io/bash-shell/getopts.html
 
@@ -124,7 +124,7 @@ wget -q -password="$password" "ftp://${username}@${hostname}/filename.txt
 
 echo -n "Type Your Answer [y/n]: "
 
-# 현재 터미널 설정을 셸 변수 tty_state에 백업하고 
+# 현재 터미널 설정을 쉘 변수 tty_state에 백업하고 
 # 터미널을 raw 설정함
 tty_state=$(stty -g)
 stty raw
@@ -171,7 +171,7 @@ do
 done < question.txt
 ``` 
 - `read` 명령어를 활용해 파일을 읽는 도중에 `read` 명령어를 활용해 키보드 입력을 처리할 수 있다. 
-- `read` 명령어는 표준 입력(키보드에서 입력)을 읽어서 그 값을 셸 변수에 대입하지만 파일 내용을 한 줄씩 읽어서 셸 변수에 대입할 수도 있습니다. 
+- `read` 명령어는 표준 입력(키보드에서 입력)을 읽어서 그 값을 쉘 변수에 대입하지만 파일 내용을 한 줄씩 읽어서 쉘 변수에 대입할 수도 있습니다. 
 - 같이 읽어보기 
   - 명령어 치환 : https://wiki.kldp.org/HOWTO/html/Adv-Bash-Scr-HOWTO/commandsub.html
 
