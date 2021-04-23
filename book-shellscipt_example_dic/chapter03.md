@@ -179,3 +179,222 @@ find $logdir -name "*.log" -mtime -4 -mtime +1 -print
   - `+n`: n일 전까지 
 
 
+# 031 작업 파일 디렉토리에서 1년 이상 갱신되지 않은 파일 삭제하기 
+```bash 
+#!/bin/sh 
+
+lgdir="/var/log/my/app"
+
+# 최종 갱신일이 1년 이상된 오래된 파일 삭제 
+find $logdir -name "*.log" -mtime +364 -print | xargs rm -fv 
+```
+
+
+032 로그 파일이 엄청 많은 디렉토리에서 파일들에 명령어를 일괄 실행하기 
+```bash 
+#!/bin/sh 
+
+logdir="/var/log/myapp"
+
+# 확장자 .log 파일에서 "ERROR" 문자열 검색 
+find $logdir -name "*.log" -print | xargs grep "ERROR" /dev/null 
+```
+
+
+# 033 파일을 백업할 때 파일명에 날짜 넣기 
+```bash 
+#!/bin/sh
+
+config="myapp.conf"
+
+bak_filename="${config}.$(date '+%Y%m%d')"
+
+# 이미 myapp.conf.20131202 등이 있으면 초까지 넣어서 백업 파일 작성 
+if [ -e $bak_filename ]; then 
+  bak_filename="${config}.$(date '+%Y%m%d%H%M.%S')"
+fi
+
+cp -v "$config" "$bak_filename"
+```
+
+
+# 034 파일들을 다른 디렉토리에 동기화해서 백업처리하기 
+```bash
+#!/bin/sh 
+log_dir="/home/user1/myapp/log"
+backup_dir="/backup/myapp"
+
+# /home/user1/myapp/log 안에 있는 로그 파일을 
+# /backup/myapp/log 디렉토리에 복사 
+rsync -av "$log_dir" "$backup_dir"
+```
+
+
+# 035 로컬 디렉토리에 파일을 만들지 않고 직접 원격 호스트에 아카이브하기 
+```bash 
+#!/bin/sh 
+
+username="user1"
+server="192.168.1.5"
+
+tar cvf - myapp/log | ssh ${username}@${server} "cat > /backup/myspplog.tar"
+```
+
+
+# 036 중요한 파일을 암호 걸어서 zip으로 아카이브하기 
+```bash
+#!/bin/sh
+
+logdir="/home/user1/myapp"
+
+cd "$logdir"
+
+# /home/user1/myapp/log 디렉토리에 있는 로그 파일을 
+# 암호 걸린 zip 으로 아카이브 
+zip -e -r log.zip log 
+```
+
+
+# 037 gzip 명령어로 압축률 높이기 
+```bash 
+#!/bin/sh 
+
+tar cf archive.tar log 
+
+# -9 옵션으로 압축률을 최대로 함
+gzip -9 archive.tar 
+```
+
+
+# 038 tar 아카이브할 때 일부 파일이나 디렉토리 제외하기
+```bash
+#!/bin/sh
+
+tar cvf archive.tar --exclude ".svn" myapp
+```
+
+
+# 039 tar 아카이브에 파일 추가하기 
+```bash
+#!/bin/sh
+
+# 년월로 아카이브 파일 지정(예: 201312.tar)
+archivefile="$(date +'%Y%m').tar"
+# 오늘 날짜로 로그 파일 지정(예: 20131205.log)
+logfile="$(date +'%Y%m%d').log"
+# 월별 아카이브에 오늘 로그 추가 
+tar rvf $archivefile log/$logfile
+```
+
+
+# 040 파일 퍼미션과 타임 스탬프 등 원래 파일 속성을 유지한 채 파일 복사하기 
+```bash
+#!/bin/sh
+
+backup_dir="home/user1/backup"
+
+# myapp 디렉토리를 $backup_dir 밑에 백업 복사
+while getooopts "a" option
+do
+  case $option in 
+    a)
+      cp -a myapp "$backup_dir"
+      exit
+      ;;
+  esac
+done
+
+cp -R myapp "$backup_dir"
+```
+
+
+# 041 HTMl 파일인 .htm과 .html 확장자를 txt로 일괄 변경하기 
+```bash
+#!/bin/sh
+
+for filename in *
+do 
+  case "$filename" in
+    *.htm | *.html)
+      #파일명 앞 부분을 취득(index)
+      headname=${filename%.*}
+
+      # 파일명을 .txt로 변환 
+      mv "$filename" "${headname}.txt"
+    ;;
+  esac
+done
+```
+
+
+# 042 처리 시작 전에 실행 권한을 확인해서 정상 동작이 가능한지 확인 후 실행하기
+```bash
+#!/bin/sh 
+
+start_command="./start.sh"
+
+if [ -x "$start_command" ]; then
+  $start_command
+else
+  echo "ERROR: -x $start_command failed." >&2
+  exit 1
+fi
+```
+
+
+# 043 두 파일을 비교해서 오래된 파일 삭제하기 
+```bash
+#!/bin/sh
+
+# 비교 대상 파일
+log1="log1.log"
+log2="log2.log"
+
+# 인수 파일이 존재하는지 확인해서 존재하지 않으면 종료
+filecheck()
+{
+  if [ ! -e "$1" ]; then
+    echo "ERROR: File $1 does not exist." >&2
+    exit 1;
+  fi
+}
+
+filecheck "$log1"
+filecheck "$log2"
+
+# 두 파일을 비교해서 오래된 쪽 삭제
+if [ "$log1" -nt "$log2" ]; then
+  echo "[$log1]->newer, [$log2]->older"
+  rm $log2
+else
+  echo "[$log2]->newer, [$log1]->older"
+  rm $log1
+fi
+```
+
+
+# 044 두 디렉토리를 비교해서 한쪽에만 있는 파일 표시하기 
+```bash
+#!/bin/sh
+
+# 비교할 디렉토리명
+dirA="dir1"
+dirB="dir2"
+
+# dir1/과 dir2/ 파일 목록 차이를 조사하기 
+( cd dir1; find . -maxdepth 1 -type f -print | sort ) > dir1-file.lst
+( cd dir2; find . -maxdepth 1 -type f -print | sort ) > dir2-file.lst 
+
+comm dir1-file.lst dir2-file.lst
+```
+
+
+# 045 디렉토리에 있는 서브디렉토리들의 디스크 사용량 조사하기 
+```bash
+#!/bin/sh
+
+data_dir="/home/user1/myapp/data"
+
+# $data_dir 디렉토리의 서브디렉토리 용량 표시
+du -sk ${data_dir}/*/ | sort -rn
+```
