@@ -453,3 +453,83 @@ data_dir="/home/user1/myapp/data"
 du -sk ${data_dir}/*/ | sort -rn
 ```
 - du 명령어로 표시되는 값은 파일 크기가 아니라 파일이 디스크에서 사용하는 블록 크기 이다. 
+
+
+# 46 작업 파일을 만들 때 내용을 읽지 못하도록 보안 대책 세우기
+```bash
+#!/bin/sh
+
+umask 077
+
+# echo 명령어 출력을 권한 600인 임시 파일로 작성 
+echo "ID: abcd123456" > idinfo.tmp 
+```
+
+
+- umask 
+
+
+# 47 바이너리 파일에 포함된 문자열 얻기 
+```bash
+#!/bin/sh
+
+# 검색할 에러 메시지 
+message="Unknown Error"
+
+strings -f /home/user1/myapp/bin/* | grep "$message"
+```
+
+
+# 48 .svn 등 숨은 파일과 디렉토리만 나열하기 
+```bash
+#!/bin/sh
+
+# IFS에 줄바꿈 설정 
+IFS='
+'
+
+# 현재 디렉토리 아래에 있는 파일을 $filename으로 순서대로 처리 
+for filename in $(ls -AF)
+do
+  case "$filename" in
+    .*/)
+      echo "dot directory: $filename"
+    ;;
+    .*)
+      echo "dot file: $filename"
+    ;;
+  esac
+done
+```
+
+
+# 49 이중 실행이 가능한 임시 파일 작성하기 
+```bash
+#!/bin/sh
+
+tmpfile="tmp.$$"
+
+date > $tmpfile
+sleep 10
+
+cat $tmpfile
+rm -f $tmpfile
+```
+# 050 sed로 파일 치환 시 심볼릭 링크를 실제 파일로 바꾸지 않게 하기 
+```bash
+#!/bin/sh
+
+filename="target.txt"
+
+if [ ! -e "$filename" ]; then
+  # 대상 파일이 존재하지 않으면 에러 종료
+  echo "ERROR: File not exists." >&2
+  exit 1
+elif [ -h "$filename" ]; then
+  # 대상 파일이 심볼릭 링크면 readlink 명령어로 
+  # 실제 파일을 대상으로 처리하기 
+  sed -i.bak "s/Hello/Hi/g" "$(readlink "$filename")"
+else
+  sed -i.bak "s/Hello/Hi/g" "$filename"
+fi
+```
