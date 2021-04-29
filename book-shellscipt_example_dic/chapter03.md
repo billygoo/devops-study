@@ -157,7 +157,7 @@ done
 - `sed -n "s/^.*<title>\(.*)<\/title>.*$/\1/p" $htmlfile`
   - `$htemlfile`을 검색한다.
   - `-n` : 패턴 스페이스를 출력하지 않는다.
-  - `^.*<title>\(.*)<\/title>.*$` : <title> 태그를 검색해 값을 패턴 매칭 한다. 
+  - `^.*<title>\(.*)<\/title>.*$` : `<title>` 태그를 검색해 값을 패턴 매칭 한다. 
   - `\1` : 후방 참조(또는 역참조)로 tag 내용을 표시한다. 
   - `p` 플래그: 치환이 발생했을 때만 출력한다.  
 - 같이 보기
@@ -192,7 +192,7 @@ find $logdir -name "*.log" -mtime +364 -print | xargs rm -fv
 - `xargs` 명령어는 파일 목록을 인수로 받아서 임의의 명령어를 실행 한다. 
 - Tip 
   - `rm` 명령어 사용시 `-f` 옵션을 통해 오류가 나도 에러 발생 안되도록 할 수 있다. 
-  - `xargs` 명령어에 전달되는 파라미터에 공백문자가 있으면 에러가 나는데 `-O` 옵션을 사용해 `null` 문자만 처리하도록 할수 있다. 그리고 다른 명령어도 `print0` 옵션으로 출력되도록 한다. 
+  - `xargs` 명령어에 전달되는 파라미터에 공백문자가 있으면 에러가 나는데 `-O` 옵션을 사용해 `null` 문자만 처리하도록 할수 있다. 그리고 다른 명령어도 `-print0` 옵션으로 출력되도록 한다. 
 - 같이 보기 
   - xargs(1) : https://man7.org/linux/man-pages/man1/xargs.1.html
   - xargs 활용 : https://rsec.kr/?p=91
@@ -212,7 +212,7 @@ find $logdir -name "*.log" -print | xargs grep "ERROR" /dev/null
   - `ARG_MAX`를 읽어오기 위해 `getconf ARG_MAX` 명령어를 사용하면 된다. 
 - 파일이 너무 많이 있는 경우 `*`를 사용할 경우 `Argument list to long` 메시지가 나올 수 있다. 이를 `xargs`를 활용하면 처리 된다. 
 - Tip
-  - 다음과 같이 grep 명령어 뒤에 /dev/null을 추가 함으로써 여러 파일을 처리하는 것으로 동작하게 하면, 파일명을 출력할 수 있다. 
+  - 다음과 같이 `grep` 명령어 뒤에 `/dev/null`을 추가 함으로써 여러 파일을 처리하는 것으로 동작하게 하면, 파일명을 출력할 수 있다. 
   ```bash
   find $logdir -name "*.log" -print | xargs grep "ERROR" /dev/null 
   ```
@@ -249,8 +249,9 @@ rsync -av "$log_dir" "$backup_dir"
   - 원본과 대상의 차이를 기준으로 갱신된 파일만 복사된다. 
   - 파일 타임스탬프, 퍼미션, 소유자 정보 등 파일 속성이 복사된다.
   - ssh를 써서 서버간 파일을 동기화 할 수 있다.
-- `-a`는 아카이브 모드로 `rlptgoD` 옵션을 사용하는 것과 같다. 
-  - 디렉티로 포함, 링크, 퍼미션 등 속성 정보가 그대로 복사하는 것이다. 
+- `-a`는 아카이브 모드로 `-rlptgoD` 옵션을 사용하는 것과 같다. 
+  - 하위 디렉토리, 심링크, 퍼미션, 타임스탬프 등 속성 정보를 그대로 복사하는 것이다. 
+- `-n`(`--dry-run`)을 사용하면 실제 동작하지 않고 복사될 파일만 출력한다.
 - 같이보기 
   - `rsync` : https://man7.org/linux/man-pages/man1/rsync.1.html
 
@@ -265,12 +266,12 @@ tar cvf - myapp/log | ssh ${username}@${server} "cat > /backup/myspplog.tar"
 ```
 - `tar` 는 파일을 하나로 묶을 뿐 압축 처리하지 않는다. 대신 압축하려면 `-z` 옵션을 활용하면 된다.
 - `tar` command example
-```bash
-tar -cvf [압축 파일명] [압축할 파일들 또는 디렉토리]
-tar -cvf temp.tar /etc 
-# 압축 파일명을 `-`으로 지정하면 표준 출력으로 전달한다.
-tar -cvf - /etc
-```
+  ```bash
+  tar -cvf [압축 파일명] [압축할 파일들 또는 디렉토리]
+  tar -cvf temp.tar /etc 
+  # 압축 파일명을 `-`으로 지정하면 표준 출력으로 전달한다.
+  tar -cvf - /etc
+  ```
 
 # 036 중요한 파일을 암호 걸어서 zip으로 아카이브하기 
 ```bash
@@ -296,7 +297,7 @@ tar cf archive.tar log
 gzip -9 archive.tar 
 ```
 - `gzip` 명령어는 `-숫자` 옵션을 써서 압축률을 조정할 수 있다.
-- `GZIP` 환병 변수에 `-숫자` 옵션을 지정하면 기본값 옵션을 지정할 수 있다. 
+- `GZIP` 환경 변수에 `-숫자` 옵션을 지정하면 기본값 옵션을 지정할 수 있다. 
 
 # 038 tar 아카이브할 때 일부 파일이나 디렉토리 제외하기
 ```bash
@@ -361,10 +362,11 @@ do
 done
 ```
 - 파라미터 확장(Parameter Expansion)을 사용해 문자열들 연산을 할 수 있다. 
+
 | Category | Syntax | Description | Example |
 |----|----|----|----|
-| 길이 | ${#PARAM} | 문자열 길이 | | 
-|  | ${#ARRAY[@]} or ${#ARRAY[*]} | 배열의 길이는 @ 또는 *을 써야한다. | | 
+| 길이 | `${#PARAM}` | 문자열 길이 | | 
+|  | `${#ARRAY[@]}` or `${#ARRAY[*]}` | 배열의 길이는 @ 또는 *을 써야한다. | | 
 | 매칭되는 문자열 삭제 | `${PARAM#패턴}` | 앞에서 부터 검색해 매칭되는 문자열 삭제 | |
 | | `${PARAM##패턴}` | 앞에서 부터 검색해 마지막으로 매칭되는 문자열 삭제 | |
 | | `${PARAM%패턴}` | 뒤에서 부터 검색해 매칭되는 문자열 삭제 | |
@@ -386,7 +388,7 @@ else
   exit 1
 fi
 ```
-- `test` 명령어는 조건 판단을 해서 그 결과가 참이면 종료 스테이터스로 0을 돌려준다. 
+- `test` 명령어는 조건 판단을 해서 그 결과가 참이면 종료 스테이터스로 `0`을 돌려준다. 
 
 # 043 두 파일을 비교해서 오래된 파일 삭제하기 
 ```bash
