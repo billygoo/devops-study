@@ -188,9 +188,17 @@ lgdir="/var/log/my/app"
 # 최종 갱신일이 1년 이상된 오래된 파일 삭제 
 find $logdir -name "*.log" -mtime +364 -print | xargs rm -fv 
 ```
+  
+- `xargs` 명령어는 파일 목록을 인수로 받아서 임의의 명령어를 실행 한다. 
+- Tip 
+  - `rm` 명령어 사용시 `-f` 옵션을 통해 오류가 나도 에러 발생 안되도록 할 수 있다. 
+  - `xargs` 명령어에 전달되는 파라미터에 공백문자가 있으면 에러가 나는데 `-O` 옵션을 사용해 `null` 문자만 처리하도록 할수 있다. 그리고 다른 명령어도 `print0` 옵션으로 출력되도록 한다. 
+- 같이 보기 
+  - xargs(1) : https://man7.org/linux/man-pages/man1/xargs.1.html
+  - xargs 활용 : https://rsec.kr/?p=91
 
 
-032 로그 파일이 엄청 많은 디렉토리에서 파일들에 명령어를 일괄 실행하기 
+# 032 로그 파일이 엄청 많은 디렉토리에서 파일들에 명령어를 일괄 실행하기 
 ```bash 
 #!/bin/sh 
 
@@ -200,6 +208,14 @@ logdir="/var/log/myapp"
 find $logdir -name "*.log" -print | xargs grep "ERROR" /dev/null 
 ```
 
+- 유닉스에는 명령행 인수 상한값이 `ARG_MAX` 상수로 지정되어 있음 
+  - `ARG_MAX`를 읽어오기 위해 `getconf ARG_MAX` 명령어를 사용하면 된다. 
+- 파일이 너무 많이 있는 경우 `*`를 사용할 경우 `Argument list to long` 메시지가 나올 수 있다. 이를 `xargs`를 활용하면 처리 된다. 
+- Tip
+  - 다음과 같이 grep 명령어 뒤에 /dev/null을 추가 함으로써 여러 파일을 처리하는 것으로 동작하게 하면, 파일명을 출력할 수 있다. 
+  ```bash
+  find $logdir -name "*.log" -print | xargs grep "ERROR" /dev/null 
+  ```
 
 # 033 파일을 백업할 때 파일명에 날짜 넣기 
 ```bash 
@@ -218,6 +234,7 @@ cp -v "$config" "$bak_filename"
 ```
 
 
+
 # 034 파일들을 다른 디렉토리에 동기화해서 백업처리하기 
 ```bash
 #!/bin/sh 
@@ -228,7 +245,14 @@ backup_dir="/backup/myapp"
 # /backup/myapp/log 디렉토리에 복사 
 rsync -av "$log_dir" "$backup_dir"
 ```
-
+- `rsync`은 파일을 동기화 하는 명령어로 서버 관리 용도로 널리 쓰임 
+  - 원본과 대상의 차이를 기준으로 갱신된 파일만 복사된다. 
+  - 파일 타임스탬프, 퍼미션, 소유자 정보 등 파일 속성이 복사된다.
+  - ssh를 써서 서버간 파일을 동기화 할 수 있다.
+- `-a`는 아카이브 모드로 `rlptgoD` 옵션을 사용하는 것과 같다. 
+  - 디렉티로 포함, 링크, 퍼미션 등 속성 정보가 그대로 복사하는 것이다. 
+- 같이보기 
+  - `rsync` : https://man7.org/linux/man-pages/man1/rsync.1.html
 
 # 035 로컬 디렉토리에 파일을 만들지 않고 직접 원격 호스트에 아카이브하기 
 ```bash 
@@ -239,7 +263,14 @@ server="192.168.1.5"
 
 tar cvf - myapp/log | ssh ${username}@${server} "cat > /backup/myspplog.tar"
 ```
-
+- `tar` 는 파일을 하나로 묶을 뿐 압축 처리하지 않는다. 대신 압축하려면 `-z` 옵션을 활용하면 된다.
+- `tar` command example
+```bash
+tar -cvf [압축 파일명] [압축할 파일들 또는 디렉토리]
+tar -cvf temp.tar /etc 
+# 압축 파일명을 `-`으로 지정하면 표준 출력으로 전달한다.
+tar -cvf - /etc
+```
 
 # 036 중요한 파일을 암호 걸어서 zip으로 아카이브하기 
 ```bash
@@ -253,7 +284,7 @@ cd "$logdir"
 # 암호 걸린 zip 으로 아카이브 
 zip -e -r log.zip log 
 ```
-
+- `tar+gz`은 아카이브 할때 암호를 지정할 수 없기 때문에 `zip -e` 옵션을 활용할 수 있다. 
 
 # 037 gzip 명령어로 압축률 높이기 
 ```bash 
@@ -264,7 +295,8 @@ tar cf archive.tar log
 # -9 옵션으로 압축률을 최대로 함
 gzip -9 archive.tar 
 ```
-
+- `gzip` 명령어는 `-숫자` 옵션을 써서 압축률을 조정할 수 있다.
+- `GZIP` 환병 변수에 `-숫자` 옵션을 지정하면 기본값 옵션을 지정할 수 있다. 
 
 # 038 tar 아카이브할 때 일부 파일이나 디렉토리 제외하기
 ```bash
@@ -272,7 +304,8 @@ gzip -9 archive.tar
 
 tar cvf archive.tar --exclude ".svn" myapp
 ```
-
+- `tar` 명령어 사용시 `--exclude` 옵션 활용시 필요 없는 파일/디렉토리를 제외할 수 있다. 
+- `tar` 명령어 `-X` 옵션 사용하면 저장된 파일에서 정의된 파일/디렉토리를 제외할 수 있다. 
 
 # 039 tar 아카이브에 파일 추가하기 
 ```bash
@@ -285,6 +318,7 @@ logfile="$(date +'%Y%m%d').log"
 # 월별 아카이브에 오늘 로그 추가 
 tar rvf $archivefile log/$logfile
 ```
+- 'tar'의 'r' 옵션을 지정하면 아카이브 파일 끝에 파일을 추가할 수 있다.
 
 
 # 040 파일 퍼미션과 타임 스탬프 등 원래 파일 속성을 유지한 채 파일 복사하기 
@@ -306,7 +340,8 @@ done
 
 cp -R myapp "$backup_dir"
 ```
-
+- `cp` 명령어로 파일을 복사하면 `umask`, `timestamp`가 변경된다. 
+- `cp` 명령어로 백업 용도로 복사하려면 `-a` 옵션을 사용해야 한다. 
 
 # 041 HTMl 파일인 .htm과 .html 확장자를 txt로 일괄 변경하기 
 ```bash
@@ -325,7 +360,18 @@ do
   esac
 done
 ```
-
+- 파라미터 확장(Parameter Expansion)을 사용해 문자열들 연산을 할 수 있다. 
+| Category | Syntax | Description | Example |
+|----|----|----|----|
+| 길이 | ${#PARAM} | 문자열 길이 | | 
+|  | ${#ARRAY[@]} or ${#ARRAY[*]} | 배열의 길이는 @ 또는 *을 써야한다. | | 
+| 매칭되는 문자열 삭제 | `${PARAM#패턴}` | 앞에서 부터 검색해 매칭되는 문자열 삭제 | |
+| | `${PARAM##패턴}` | 앞에서 부터 검색해 마지막으로 매칭되는 문자열 삭제 | |
+| | `${PARAM%패턴}` | 뒤에서 부터 검색해 매칭되는 문자열 삭제 | |
+| | `${PARAM%%패턴}` | 뒤에서 부터 검색해 마지막으로 매칭되는 문자열 삭제 | |
+- 활용 예시 : 확장자 분리, 디렉토리와 파일명 분리, 라인 찾아 지우기 등
+- 같이 보기 
+  - https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
 
 # 042 처리 시작 전에 실행 권한을 확인해서 정상 동작이 가능한지 확인 후 실행하기
 ```bash
@@ -340,7 +386,7 @@ else
   exit 1
 fi
 ```
-
+- `test` 명령어는 조건 판단을 해서 그 결과가 참이면 종료 스테이터스로 0을 돌려준다. 
 
 # 043 두 파일을 비교해서 오래된 파일 삭제하기 
 ```bash
@@ -371,7 +417,7 @@ else
   rm $log1
 fi
 ```
-
+- `-nt`, `-ot` 조건식으로 타임스탬프를 비교할 수 있다.
 
 # 044 두 디렉토리를 비교해서 한쪽에만 있는 파일 표시하기 
 ```bash
@@ -387,6 +433,12 @@ dirB="dir2"
 
 comm dir1-file.lst dir2-file.lst
 ```
+- `comm` 명령어로 두 파일의 차이를 출력할 수 있다. 
+- 단 `comm` 명령어로 비교 하기 위해선 두 파일이 정렬 되어 있어야 한다. 
+- `-1`, `-2`, `-3` 옵션을 이용해 원하는 출력을 조정할 수 있다. 
+- 같이보기
+  - comm - compare two sorted files line by line
+  - https://man7.org/linux/man-pages/man1/comm.1.html
 
 
 # 045 디렉토리에 있는 서브디렉토리들의 디스크 사용량 조사하기 
@@ -398,3 +450,4 @@ data_dir="/home/user1/myapp/data"
 # $data_dir 디렉토리의 서브디렉토리 용량 표시
 du -sk ${data_dir}/*/ | sort -rn
 ```
+- du 명령어로 표시되는 값은 파일 크기가 아니라 파일이 디스크에서 사용하는 블록 크기 이다. 
