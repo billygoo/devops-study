@@ -21,6 +21,8 @@ echo "day interval: "
 day_interval=$(expr \( $day1_epoch - $day2_epoch \) / 86400)
 echo $day_interval
 ```
+- 유닉시 시간 : Unix epoch로 1970년 1월 1일 0시 0분 0초 기준으로 경과한 초를 나타내는 값
+
 
 
 # 052 오늘이 마일인지 판별하기 
@@ -34,8 +36,8 @@ if [ "$tomorrow" = "01" ]; then
     ./monthly_report.sh
 fi
 ```
-
-> TODO : date 문법 정리해보기
+- `date` 명령어는 `-d` 옵션을 써서 현재 시각의 전후를 지정할 수 있음
+  - mac에서는 `-v` 옵션을 사용해야 함
 
 # 053 한달 전에 만든 로그 파일을 일괄 아카이브하기 
 ```bash
@@ -54,6 +56,7 @@ last_YYYYMM=$(date -d "$thismonth -1 month ago" '+%Y%m')
 # 지난달 로그 파일을 아카이브
 tar cvf ${last_YYYYMM}.tar ${logdir}/access.log-${last_YYYYMM}*
 ```
+- 날짜 연산(`date -d`)을 이용하면 필요한 월 또는 년으로 작업을 진행할 수 있음
 
 # 054 윤년인지 확인하기 
 ```bash
@@ -78,6 +81,10 @@ else
   ls "${logfile}${year}0228"
 fi
 ```
+- 윤년 기준 
+  - 서력이 4로 나눠 떨어지면 윤년
+  - 단, 100으로 나눠 떨어지면 안됨
+  - 단, 400으로 나눠 떨어지면 윤년
 - test 비교 연산자 
     | 표기 | 산술식 |
     |---|---|
