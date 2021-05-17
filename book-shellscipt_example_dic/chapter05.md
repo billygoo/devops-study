@@ -142,3 +142,158 @@ do
   sleep 1
 done < $1
 ```
+
+# 061 서버의 특정 포트가 여려 있는지 확인하는 스크립트 작성하기
+```bash
+#!/bin/sh
+
+ipaddr="192.168.2.52"
+faillog="fail-port.log"
+
+# 확인할 포트는 80, 2222, 8080
+for port in 80 2222 8080
+do 
+  nc -w 5 -z $ipaddr $port 
+
+  if [ $? -ne 0 ]; then
+    echo "Failed at port: $port" >> $ "$faillog"
+  fi
+done
+```
+
+# 062 간이 TCP 서버 띄우기 
+```bash 
+#!/bin/sh
+
+port=8080
+nc -v -k -l $port
+```
+
+# 063 ftp로 자동 내려받기, 자동 올리기 
+```bash 
+#!/bin/sh
+
+# FTP 접속 설정
+server="192.168.2.5"
+user="user1"
+password="xxxxxx"
+dir="/home/user1/myapp/log"
+filename="app.log"
+
+ftp -n "$server" << __EOT__
+user "$user" "$password"
+binary
+cd "$dir"
+get "$filename"
+__EOT__
+```
+
+# 064 쉘 스크립트로 CGI 실행하기 
+```bash
+#!/bin/sh
+
+# CGI 헤더 출력
+echo "Content-Type: text/plain"
+echo 
+
+# 명령어를 실행해서 브라우저에 표시 
+echo "Test CGI: uptime"
+uptime
+```
+
+# 065 지정한 크기의 파일을 만들어서 전송 속도를 측정하기 
+```bash 
+#!/bin/sh
+
+# 전송 속도를 측정할 임시 파일 크기 지정, 단위는 킬로바이트(KB)
+filesize=1024
+# 전송 속도를 측정할 임시 파일명
+tmpdata="tmpdata.tmp"
+timefile="timecount.tmp"
+
+# 전송에 사용할 임시 파일 작성 
+dd if=/dev/zero of="$tmpdata" count=$filesize bs=1024 2> /dev/null
+
+# FTP 전송해서 파일을 PUT
+server="192.168.2.5"
+user="user1"
+password="xxxxxxx"
+
+echo "Filesize: $filesize (KB)"
+echo "FTP Server: $server"
+
+(time -p ftp -n "$server") << __EOT__ 2> "$timefile"
+user "$user" "$password"
+binary
+put "$tmpdata"
+__EOT__
+
+# time 명령어 출력 결과에서 실제 시간을 얻은 후 나눠서 속도 계산 
+realtime=$(awk '/^real / {print $2}' "$timefile")
+speed=$(echo "${filesize}/${realtime}" | bc)
+echo "Transfer Speed: $speed (KB/sec)"
+
+# 임시 파일 삭제 
+rm -f "$tmpdata" "$timefile"
+```
+
+# 066 IP 주소에 따른 처리 분기를 case문으로 작성하기 
+```bash
+#!/bin/sh
+
+# 대상 IP 주소를 명령행 인수로 지정하지 않으면 에러 표시 후 종료 
+if [ -z "$1" ]; then 
+  echo "IP 주소를 지정하세요." >&2
+  exit 1
+fi
+
+# 대상 네트워크라면 ping 명령어 실행 
+case "$1" in
+  192.168.2.*|192.168.10.*)
+    ping -c 1 "$1" > /dev/null 2>&1
+
+    if [ $? -eq 0 ]; then
+      echo "Ping to $1 : [OK]"
+    else
+      echo "Ping to $1 : [NG]"
+    fi
+    ;;
+  *)
+    echo "$1 테스트 대상이 아닙니다." >&2
+    exit 2
+    ;;
+esac
+```
+
+# 067 로컬 쉘 스크립트 파일을 원격 호스트에서 그대로 실행하기
+```bash
+#!/bin/sh
+
+username="user1"
+script="check.sh"
+
+cat $script | ssh ${username}@192.168.2.4 "sh"
+cat $script | ssh ${username}@192.168.2.5 "sh"
+cat $script | ssh ${username}@192.168.2.6 "sh"
+```
+
+- `check.sh`
+```bash
+#!/bin/sh
+
+# 개통 확인할 대상 서버
+checkserver="192.168.2.35"
+
+# 스크립트를 실행한 호스트명 표시 
+hostname
+
+# 서버 개통을 ping 명령어로 확인 
+ping -c 1 "$checkserver" > /dev/null 2>&1
+
+if [ $? -eq 0 ]; then
+  echo "Ping to $checkserver : [OK]"
+else
+  echo "Ping to $checkserver : [NG]"
+fi
+```
+
