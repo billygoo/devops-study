@@ -24,6 +24,13 @@
 
 ## Example 
 
+# sed
+> Description
+## Syntax 
+
+## Details
+
+## Example 
 
 # test 
 > Description
