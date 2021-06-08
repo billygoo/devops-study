@@ -250,3 +250,245 @@ do
   echo " [$name]"
 done < $csvfile
 ```
+
+# 076 로그 파일 컬럼 위치를 바꿔서 출력하고 보기 쉽게 바꾸기
+```bash
+#!/bin/sh
+
+# 로그 파일이 존재하지 않으면 종료 
+if [ ! -f "$1" ]; then 
+  echo "대상 로그 파일이 존재하지 않습니다: $1" >&2
+  exit 1
+fi 
+
+# 리퀘스트 시작과 원격 호스트를 외부 파일에 출력 
+awk '{print $4,$5,$1}' "$1" > "${1}.lst"
+```
+- TIP: awk를 활용해서 문자열을 재조합해 원하는 대로 출력한다. 
+- awk 명령어에서 print 할 때는 쉼표(`,`)가 스페이스가 된다. 
+
+
+# 077 웹 서버 로그 파일에서 특정 상태값만 취득하기 
+```bash
+#!/bin/sh
+
+logfile="access_log"
+
+# 로그 파일이 존재하지 않으면 종료 
+if [ ! -f "$logfile" ]; then
+  echo "대상 로그 파일이 존재하지 않습니다: $logfile" >&2
+  exit 1
+fi
+
+# HTTP Status를 외부 파일에 출력
+awk '$(NF-1)==404 {print $7}' "$logfile" > "${logfile}.404"
+```
+- TIP : awk로 원하는 문자만 검사해서 조건이 허용되는 케이스 처리하기 
+- `NF` : awk 명령어로 처리하는 줄의 컬럼(필드) 수
+
+
+# 078 시스템 로그에서 IP 주소마다 횟수 집계하기 
+```bash
+#!/bin/sh
+
+# sshd 로그 파일 
+securelog="/var/log/secure"
+
+# IP 주소를 추출하기 위한 패턴으로 변수에 저장 
+pattern="^.*sshd\[.*\].*Failed password for.* from \(.*\) port .*"
+
+# 암호 인증 실패 로그에서 IP 주소를 추출, 카운트해서 표시
+sed -n "s/$pattern/\1/p" "$securelog" | sort | uniq -c | sort -nr
+```
+- `sed`로 원하는 문자열만 출력해 정렬한 후 `uniq`로 동일한 줄의 횟수를 세어서 정렬해 출력한다. 
+  - 동일한 줄 확인할 때 `sort | uniq -c | sort -nr` 명령어를 자주 쓴다.
+- `uniq` : 파일의 반복되는 줄을 리포트 하거나 필
+  - `-c` : 동일한 줄의 출현 횟수 세기
+- `sort`
+  - `-n` : 숫자 정렬
+  - `-r` : 역순 정렬
+
+# 079 웹 접속 로그에서 파일별 접속 횟수 집계하기 
+```bash
+#!/bin/sh
+
+logfile="access_log"
+
+# 로그 파일이 존재하지 않으면 종료
+if [ ! -f "$logfile" ]; then 
+  echo "대상 로그 파일이 존재하지 않습니다: $logfile" >&2
+  exit 1
+fi
+
+# 로그 파일에서 GET메소드로 취득한 파일 접속 횟수 집계
+# awk 명령어로 파일을 추출해서 sort와 uniq로 카운트해서 역순 정렬
+awk '$6=="\"GET" {print $7}' "$logfile" | sort | uniq -c | sort -nr
+```
+- awk로 로그를 필터링 해서 필요한 문자만 출력해 집계할 수 있는 방법 
+- TIP : [AWState](https://awstats.sourceforge.io/)를 이용해 웹 서버 아파치 로그 분석할 수 있다. 
+
+# 080 sed로 HTML 파일 속성을 바꿀 때 슬래시 이스케이프 피하기 
+```bash 
+#!/bin/sh
+
+# 출력 디렉토리 정의
+outdir="newdir"
+
+# 출력 디렉토리 존재 확인, 없으면 에러
+if [ ! -d "$outdir" ]; then 
+  echo "출력 디렉토리가 존재하지 않습니다: $outdir" >&2
+  exit 1
+fi 
+
+# 현재 디렉토리의 HTML 파일 처리 
+for htmlfile in *.html
+do
+  # 파일 내용에서 /img/를 /images/로 변환
+  sed "s%/img/%/images/%g" "$htmlfile" > "${outdir}/${htmlfile}"
+done
+```
+- `sed` 명령어로 치환할 때 보통 **s 명령어** 뒤에 `/`(슬래시)로 패턴을 표시하고, `/`(슬래시) 자체가 문자열에 포함되어 있을 경우 `\`(역슬래시) 기호로 이스케이프 한다. 
+- 하지만 가독성이 떨어서 패턴을 지정하는 구분자를 변경해 사용하면 편하게 활용 가능하다. 
+- **s 명령어** 뒤에 있는 문자를 구분자로 인식하며, 보통 `%`를 많이 사용한다. 
+```bash
+sed "s/\/img\//\/images\//g" test.html
+
+sed "s%/img/%/images/%g" test.html
+```
+
+# 081 오른쪽 정렬로 숫자를 표시하는 텍스트 표 만들기 
+```bash
+#!/bin/sh 
+
+# 검색할 문자열 정의 
+ search_text="ERROR 19:"
+
+ # 현재 디렉토리에서 확장자가 .log인 파일을 순서대로 처리 
+ for filename in *.log 
+ do
+  # 일치하는 줄 수를 -c 옵션으로 취득
+  count=$(grep -c "$search_text" "$filename")
+  # printf 명령어로 오른쪽 정렬 6칸으로 변형해서 출력
+  printf "%6s (%s)\n" "$count" "$filename"
+done
+```
+- `grep -c` : 패턴이 일치하는 줄 수를 표시
+- `printf` : 문자열을 다양한 포맷으로 출력
+  - Usage : `printf [포맷] [아규먼트]` 
+
+# 082 정해진 자리수 숫자에 하이픈 넣기(우편번호 등)
+```bash
+#!/bin/sh
+
+# 하이픈을 삭제 여부 플래그, 1이면 삭제
+d_flg=0
+
+# getopts 명령어로 삭제 옵션(-d) 판별
+while getopts "d" option
+do
+  case $option in 
+    d)
+      d_flag=1
+      ;;
+    \?)
+      exit 1
+      ;;
+  esac
+done
+
+# 명령어 인수로 지정한 우편번호 파일을 쉘 변수 filename에 대입
+shift $(expr $OPTIND - 1)
+filename="$1"
+
+# 지정한 우편번호 파일 확인
+if [ ! -f "$filename" ]; then
+  echo "대상 파일이 존재하지 않습니다: $filename" >&2
+  exit 1
+fi 
+
+# d_flag가 지정되면 하이픈 삭제, 아니면 추가 
+if [ "$d_flag" -eq 1 ]; then
+  # *하이픈 삭제
+  # awk로 앞뒤 공백 제거 -> 포맷 확인 -> 하이픈 삭제
+  awk '{print $1}' "$filename" | grep '^[0-9]\{3\}-[0-9]\{4\}$' | sed "s/-//"
+else
+  # *하이픈 추가
+  # awk로 앞뒤 공백 제거 -> 포맷 확인 -> 하이픈 추가 
+  awk '{print #1}' "$filename" | grep '^[0-9]\{7\}$' | sed "s/\(...\)/\1-/"
+fi
+```
+
+
+# 083 파일 크기를 줄이기 위해 자바스크립트 파일에서 빈 줄 제거하기 
+```bash
+#!/bin/sh
+
+# 변환 파일 출력용 디렉토리명
+outdir="newdir"
+
+# 파일 출력용 디렉토리 확인
+if [ ! -d "$outdir" ]; then 
+  echo "Not a directory: $outdir"
+  exit 1
+fi
+
+for filename in *.js
+do
+  # 빈 줄 또는 스페이스나 탭 문자만 있는 줄을 sed 명령어 d로 삭제
+  sed '/^[[:blank:]]*$/d' "$filename" > "${outdir}/${filename}"
+done
+```
+- `sed`의 `d` 플래그를 통해 일치하는 패턴을 삭제 
+
+# 084 텍스트 파일에서 HTML 파일 만들기 
+```bash
+#!/bin sh
+
+# HTML에서 이스케이프가 필요한 기호를 문자 참조로 치환 
+# 마지막에 줄 끝을 <br> 태그로 치환
+sed -e 's/&/\&amp;/g' \
+    -e 's/</\&lt;/g' \
+    -e 's/>/\&gt;/g' \
+    -e "s/'/\&#39;/g" \
+    -e 's/"/\&quot;/g' \
+    -e 's/$/<br>/' \
+    "$1"
+```
+- `sed`의 `g`플래그 이용해 일치하는 패턴을 치환
+  - `-e` : 여러개의 패턴을 지정할 수 있음
+
+# 085 HTML 파일 문자 코드를 자동으로 판별해서 UTF-8로 인코딩 된 파일로 바꾸기
+```bash
+#!/bin/sh
+
+# 변환한 파일을 출력할 디렉토리
+outdir="newdir"
+
+# 파일 출력용 디렉토리 확인 
+if [ ! -d "$outdir" ]; then 
+  echo "Not a directory: $outdir"
+  exit 1 
+fi
+
+# 현재 디렉토리의 .html 파일이 대상 
+for filename in *.html
+do
+  # grep 명령어로 meta 태그 Content-Type을 선택해서 sed 명령어로 charset= 지정 부분 추출
+  charset=$(grep -i '<meta ' "$filename" | \
+              grep -i 'http-equiv="Content-Type"' | \
+              sed -n 's/.*charset=\([-_a-zA-Z0-9]*\)".*/\1/p')
+  # charset를 얻지 못하면 iconv 명령어를 실행하지 않고 건너뛰기
+  if [ -z "$charset" ]; then 
+    echo "charset not found: $filename" >&2
+    continue
+  fi
+
+  # meta 태그에서 추출한 문자 코드를 UTF-8로 변환 후 $outdir 디렉토리에 출력
+  iconv -c -f "$charset" -t UTF-8 "$filename" > "${outdir}/${filename}"
+done
+```
+- `sed -n` : silent 모드로 실행 
+- `sed`의 `p` 플래그 : 일치하는 부분만 출력
+- `grep -i` : 대소문자 구분 없이 실행
+- `iconv` : 문자 코드를 변경하기 위해 사용하는 유틸리티
+  -  Usage : `iconv -f [입력 문자 코드] -t [출력 문자 코드] [파일명]`
