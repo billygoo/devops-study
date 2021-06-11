@@ -109,3 +109,173 @@ else
 fi
 ```
 
+# 109 RPM 패캐지며이 적힌 목록 파일에서 각각의 패키지가 설치, 갱신된 날짜를 확인하기
+```bash
+#!/bin/sh
+
+# 지정한 목록 파일 존재 확인
+if [ ! -f "$1" ]; then 
+  echo "대상 패키지 목록 파일이 존재하지 않습니다: $1" >&2
+  exit 1
+fi
+
+# 인수로 지정한 파일($1)에서 패키지 목록 얻기 
+pkglist=#(cat "$1")
+
+# 설치된 rpm 갱신일자 출력
+rpm -q $pkglist --queryformat '%{INSTALLTIME:date} : %{NAME}\n'
+```
+
+
+# 110 서버 구축 패키지 목록을 쉘 스크립트 형태로 관리하기 
+```bash
+#!/bin/sh
+
+# 설치할 패키지명 정의
+pkglist="httpd zsh xz git"
+
+# 패키지 목록에서 순서대로 한 줄씩 읽기
+for pkg in $pkglist
+do
+  # yum 명령어로 패키지 설치 
+  yum -y install $pkg
+done
+```
+
+
+# 111 특정 프로세스가 정지했는지 감시하기 
+```bash
+#!/bin/sh
+
+# 감시할 프로세스 명령어
+commname="/usr/libexec/mysqld"
+
+# 대상 명령어 프로세스 수를 카운트
+count=$(ps ax -o command | grep "$commname" | grep -v "^grep" | wc -l)
+
+# grep 명령어 출력 결과가 0이면 프로세스가 존재하지 않으므로 알림 처리하기
+if [ "$count" -eq 0 ]; then
+  echo "[ERROR] 프로세스 $commname 찾지 못했습니다." >&2
+  /home/user1/bin/alert.sh
+fi
+```
+
+
+# 112 특정 프로세스 실행 개수가 제한값을 넘었는지 확인하기
+```bash
+#!/bin/sh
+
+# 감시할 프로세스 명령어와 프로세스 허용 수
+commname="/home/user1/bin/calc"
+threshold=3
+
+# 프로세스 개수 카운트
+count=$(ps ax -o command | grep "$commname" | grep -v "^grep" | wc -l)
+
+# 프로세스 수가 허용값 이상이면 경고 처리
+if [ "$count" -ge "$threshold" ]; then
+  echo "[ERROR] 프로세스 $commname 다중 실행($count)" >&2
+  /home/user1/bin/alert.sh
+fi
+```
+
+
+# 113 프로세스를 감시해서 다운 시 자동으로 재실행하기
+```bash
+#!/bin/sh
+
+# 감시할 프로세스 명령어
+commname="/usr/sbin/httpd"
+
+# 감시 프로세스 실행 명령어
+start="service httpd start"
+
+# 감시 대상 명령어 프로세스 수 카운트
+count=$(ps ax -o command | grep "$commname" | grep -v "^grep" | wc -l) 
+
+# grep 명령어 출력 결과가 0이면 프로세스가 존재하지 않거나
+# 이상 상황이라고 보고 프로세스 재실행
+if [ "$count" -eq 0 ]; then
+  # 로그에 시각 표시
+  date_str=$(date '+%Y/%m/%d %H:%M:%S')
+  echo "[$date_str] 프로세스 $commname 찾지 못했습니다." >&2
+  echo "[$date_str] 프로세스 $commname 실행" >&2
+
+  # 감시 프로세스 실행
+  $start
+fi
+```
+
+
+# 114 서버 ping 감시하기 
+```bash
+#!/bin/sh
+
+# ping 실행 결과 스테이터스, 0이면 성공이므로 1로 초기화
+result=1
+
+# 대상 서버가 명령행 인수로 지정되지 않으면 에러 종료 
+if [ -z "$1" ]; then
+  echo "대상 호스트를 지정하세요." >&2
+  exit 1 
+fi 
+
+# ping 명령어 3회 실행, 성공하면 result를 0으로
+i=0
+while [ $i -lt 3 ] 
+do
+  # ping 명령어 실행. 종료 상태만 필요하므로 /dev/null에 리다이렉트
+  ping -c 1 "$1" > /dev/null
+
+  # ping 명령어 종료 상태 판별, 성공하면 result=0으로 반복문 탈출
+  # 실패하면 3초 대기 후 재실행
+  if [ $? -eq 0 ]; then
+    result=0
+    break
+  else
+    sleep 3
+    i=$(expr $i + 1)
+  fi
+done
+
+# 현재 시각을 [2013/02/01 13:15:44] 형태로 조합
+date_str=$(date '+%Y/%m/%d %H:%M:%S')
+
+# ping 실행 결과를 $result로 판별해서 표시 
+if [ $result -eq 0 ]; then 
+  echo "[$date_str] Ping OK: $1"
+else
+  echo "[$date_str] Ping NG: $1"
+fi
+```
+
+
+# 115 웹 접근 감시하기
+```bash
+#!/bin/sh
+
+# 감시 대상 URL 지정
+url="http://www.example.org/webapps/check"
+
+# 현재 시각을 [2013/02/01 13:15:44] 형태로 조합
+date_str=$(date '+%Y/%m/%d %H:%M:%S')
+
+# 감시 URL에 curl 명령어로 접속해서 종료 상탤를 변수 curlresult에 대입 
+httpstatus=$(curl -s "$url" -o /dev/null -w "%{http_code}")
+curlresutl=$?
+
+# curl 명령어에 실패하면 HTTP 접속 자체에 문제가 있다고 판단
+if [ "$curlresult" -ne 0 ]; then
+  echo "[$date_str] HTTP 접속 이상: curl exit status[$curlresult]"
+  /home/user1/bin/alert.sh
+# 400 번대, 500 번대 HTTP 상태 코드라면 에러로 보고 경고 
+elif [ "$httpstatus" -ge 400 ]; then
+  echo "[$date_str] HTTP 상태 이상: HTTP status[$httpstatus]"
+  /home/user1/bin/alert.s.h
+fi
+```
+
+
+# 116 디스크 용량 감시하기
+```bash
+#!/bin/sh
