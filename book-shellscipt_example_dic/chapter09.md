@@ -279,3 +279,144 @@ fi
 # 116 디스크 용량 감시하기
 ```bash
 #!/bin/sh
+
+# 감시할 디스크 사용률의 허용값 %
+used_limit=90
+
+# df 명령어 출력 결과 임시 파일명
+tmpfile="df.tmp.$$"
+
+# df 명령어로 디스크 사용량 표시. 첫 줄은 헤더이므로 제거
+df -P | awk 'NR >= 2 {print $5,$6}' > "$tmpfile"
+
+# df 명령어로 출력 임시 파일에서 사용률 확인
+while read percent mountpoint
+do
+  # "31%"을 "31"로 % 기호 삭제 
+  percent_val=${percent%\%}
+
+  # 디스크 사용량이 허용값 이상이면 경고
+  if [ "$percent_val" -ge "$used_limit" ]; then
+    # 현재시각을 [2015/02/01 13:15:12] 형식으로 조합
+    date_str=$(date '+%Y/%m/%d %H:%M:%S')
+
+    echo "[$date_str] Disk Capacity Alert: $mountpoint ($percent used)"
+    /home/user1/bin/alert.sh
+  fi
+done < "$tmpfile"
+```
+
+# 117 메모리 스왑 감시하기
+```bash
+#!/bin/sh
+
+# 감시할 스왑 발생 횟수, 이 숫자를 넘기면 경고
+swapcount_limit=10
+
+# vmstat 명령어 출력에서 스왑인, 스왑아웃 값 취득 
+swapcount=$(vmstat 1 6 | awk 'NR >= 4 {sum += $7 + $8} END{print sum}')
+
+# 스왑 횟수가 허용값을 넘기면 경고
+if [ "$swapcount" -ge "$swapcount_limit" ]; then
+  # 현재시각을 [2015/02/01 13:15:12] 형식으로 조합
+  date_str=$(date '+%Y/%m/%d %H:%M:%S')
+
+  # 스왑 발생 경고 출력
+  echo "[$date_str] Swap Alert: $swapcount (si+so)"
+  /home/user1/bin/alert.sh
+fi
+```
+
+
+# 118 CPU 사용률 감시하기 
+```bash
+#!/bin/sh
+
+# 감시할 CPU %idle 허용값
+idle_limit=10.0
+
+# CPU %idel을 mpstat 명령어로 취득, 마지막 줄의 평균값을 추출 
+cpu_idle=$(mpstat 1 5 | tail -n 1 | awk '{print $NF}')
+
+# 현재 %idle과 허용값을 bc 명령어로 비교 
+is_alert=$(echo "$cpu_idle < $idle_limit" | bc)
+
+# 경고할 것인지 판별
+if [ "$is_alert" -eq 1 ]; then 
+  # 현재시각을 [2015/02/01 13:15:12] 형식으로 조합
+  date_str=$(date '+%Y/%m/%d %H:%M:%S')
+
+  # CPU %idle 저하를 경고로 출력
+  echo "[$date_str] CPU %idle Alert: $cpu_idle (%)"
+  /home/user1/bin/alert.sh
+fi
+```
+
+# 119 웹 페이지 변경 감시하기 
+```bash
+#!/bin/sh
+
+# 감시 대상 URL
+url="http://www.example.org/update.html"
+
+# 내려 받기 파일명 정의
+newfile="new.dat"
+oldfile="old.dat"
+
+# 파일 내려받기 
+curl -so "$newfile" "$url"
+
+# 이전에 내려받은 파일과 curl로 내려받은 파일 비교 
+cmp -s "$newfile" "$oldfile"
+
+# cmp 명령어 종료 스테이터스가 0이 아니면 차이가 존재
+if [ $? -ne 0 ]; then 
+  # 현재시각을 [2015/02/01 13:15:12] 형식으로 조합
+  date_str=$(date '+%Y/%m/%d %H:%M:%S')
+
+  # 파일 변경 알림 
+  echo "[$date_str] 파일이 변경 되었습니다."
+  echo "대상 URL: $url"
+fi
+
+mv -f "$newfile" "$oldfile"
+```
+
+# 120 MySQL 데이터베이스 백업하기 
+```bash
+#!/bin/sh
+
+# 데이터베이스 접속 설정 
+DBHOST="192.168.11.5"
+DBUSER="backup"
+DBPASS="password"
+DBNAME="billy"
+
+# 데이터베이스 백업 설정 
+BACKUP_DIR="/home/user1/backup"
+BACKUP_ROTATE=3
+MYSQLDUMP="/usr/bin/mysqldump"
+
+# 백업 출력할 디렉토리 확인
+if [ ! -d "$BACKUP_DIR" ]; then
+  echo "백업용 디렉토리가 존재하지 않습니다: $BACKUP_DIR" >&2
+  exit 1
+fi
+
+today=$(date '+%Y%m%d')
+
+# mysqldump 명령어로 데이터베이스 백업을 실행 
+$MYSQLDUMP -h "${DBHOST}" -u "${DBUSER}" -p"${DBPASS}" "${DBNAME}" > "${BACKUP_DIR}/${DBNAME}-${today}.dump 
+
+# mysqldump 명령어 종료 상태 $?로 확인 
+if [ $? -eq 0 ]; then
+  gzip "${BAcKUP_DIR}/${DBNAME}-${today}.dump"
+
+  # 오래된 백업 파일 삭제
+  find "${BACKUP_DIR}" -name "${DBNAME}-*.dump.gz" -mtime +${BACKUP_ROTATE} | xargs rm -f 
+else
+  echo "백업 작성 실패:${BACKUP_DIR}/${DBNAME}-${today}.dump
+  exit 2
+fi
+```
+- `TIP`: 실행할 명령어를 변수에 할당해서 실행함
