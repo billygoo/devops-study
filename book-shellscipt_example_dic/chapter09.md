@@ -434,6 +434,9 @@ fi
   - `mpstat [ options ] [ <interval> [ <count> ] ]` : vmstat와 비슷하게 측정 횟수 및 지연 시간을 지정해 사용
   - Mac : `iostat` 명령어를 대신 사용함 
   - linux : 패키지가 설치 되어 있지 않을 경우 `sysstat` 패키지를 설치
+- 왜 CPU 사용률을 구하기 위해서 `idle` 값을 사용하는가? 
+  - CPU 전체 사용률은 `CPU USER + CPU SYSTEM + CPU IDLE` 이다. 즉 3가지 값을 더해야 100% 나온다.
+  - 그래서 `idle` 값을 이용해 단순 계산이 되도록 한다. 
 - 같이보기 : `mpstat`에서 표시되는 정보
   ```
   CPU
