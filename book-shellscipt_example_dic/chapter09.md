@@ -232,8 +232,11 @@ if [ "$count" -eq 0 ]; then
   $start
 fi
 ```
-- `TIP`: `cron`에 스크립트를 이용해 자동화 할 수 있다. 
-
+- `TIP`
+  - `cron`에 스크립트를 이용해 자동화 할 수 있다. 
+  - systemd과 같은 도구를 사용할 경우 프로세스가 실패할 경우 자동으로 재실행 할수 있는 옵션을 제공한다.
+- 같이보기
+  - [systemd란 무엇인가](https://stackframe.tistory.com/12)
 # 114 서버 ping 감시하기 
 ```bash
 #!/bin/sh
