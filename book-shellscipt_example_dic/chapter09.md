@@ -17,7 +17,7 @@ awk '/^[a-z]/ {print "[" $1 "]"}
 ```
 - `ifconfig` 명령어 출력 결과를 `awk`로 가공하기
 - `LANG` 환경변수 : 
-- awk 
+- `awk` 
   - split 함수 : 변수를 구분자로 나누어 저장함
     - `split([나눌 변수], [결과 저장 변수], 구분자)`
 
@@ -78,10 +78,10 @@ fi
 # 셧다운 실행.
 shutdown -h now
 ```
-- ps : 
-  - a : 다른 사용자의 프로세스도 표시
-  - x : 터미널을 가지지 않은 프로세스를 보여준다. 
-  - -o [fmt]: 콤마(`,`) 또는 스페이스로 구분된 키워드와 연관된 값을 표시함
+- `ps` : 
+  - `a` : 다른 사용자의 프로세스도 표시
+  - `x` : 터미널을 가지지 않은 프로세스를 보여준다. 
+  - `-o [fmt]`: 콤마(`,`) 또는 스페이스로 구분된 키워드와 연관된 값을 표시함
 - Shutdown 명령어는 os 마다 조금씩 차이가 있다.
   - 또한 실행시 sudo 권한이 필요하다.
 - 함께보기 
@@ -108,6 +108,11 @@ else
   exit 1
 fi
 ```
+- `rpm` : Redhat 패키지 관리 시스템으로, 패키지를 설치 및 조작하는 명령어
+  - `-q` : query 요청
+  - `-qf` : 파일이 어떤 패키지에 속하는지 검사 
+  - `-ql` : 패키지에 속한 파일 목록 출력
+
 
 # 109 RPM 패캐지며이 적힌 목록 파일에서 각각의 패키지가 설치, 갱신된 날짜를 확인하기
 ```bash
@@ -125,6 +130,17 @@ pkglist=#(cat "$1")
 # 설치된 rpm 갱신일자 출력
 rpm -q $pkglist --queryformat '%{INSTALLTIME:date} : %{NAME}\n'
 ```
+- rpm query 명령어
+  ```
+  Query options (with -q or --query):
+    -c, --configfiles                list all configuration files
+    -d, --docfiles                   list all documentation files
+    -L, --licensefiles               list all license files
+    --dump                           dump basic file information
+    -l, --list                       list files in package
+    --queryformat=QUERYFORMAT        use the following query format
+    -s, --state                      display the states of the listed files
+  ```
 
 
 # 110 서버 구축 패키지 목록을 쉘 스크립트 형태로 관리하기 
@@ -159,7 +175,18 @@ if [ "$count" -eq 0 ]; then
   /home/user1/bin/alert.sh
 fi
 ```
+- `ps` : 현재 프로세스 저오를 출력해 주는 유틸리티
+  - `-ax` : 모든 프로세스 표시(BSD 스타일)
+  - `-o` : 출력할 표시 항목 지정할 수 있다. 
+    - 항목엔 `pid,format,state,tname,time,command`이 있음
+  - dash(`-`)를 사용하지 않는 것은 여러 스타일의 옵션을 지원하기 때문이다. (`man ps`)
+    ```
+    This version of ps accepts several kinds of options:
 
+       1   UNIX options, which may be grouped and must be preceded by a dash.
+       2   BSD options, which may be grouped and must not be used with a dash.
+       3   GNU long options, which are preceded by two dashes.
+    ```
 
 # 112 특정 프로세스 실행 개수가 제한값을 넘었는지 확인하기
 ```bash
@@ -205,7 +232,7 @@ if [ "$count" -eq 0 ]; then
   $start
 fi
 ```
-
+- `TIP`: `cron`에 스크립트를 이용해 자동화 할 수 있다. 
 
 # 114 서버 ping 감시하기 
 ```bash
@@ -248,6 +275,7 @@ else
   echo "[$date_str] Ping NG: $1"
 fi
 ```
+- `TIP` : ping 사용시 사전에 테스트 해봐야 한다. 보안상으로 ICMP 패킷을 허용하지 않는 경우가 있기 때문이다. 
 
 
 # 115 웹 접근 감시하기
@@ -274,6 +302,8 @@ elif [ "$httpstatus" -ge 400 ]; then
   /home/user1/bin/alert.s.h
 fi
 ```
+- `TIP` : 웹 서버 동작 확인을 위해서 웹 서버 상태 코드를 확인할 수 있다. 
+- `curl -w [포맷]` : 명령어 완료 후 출력할 항목 지정
 
 
 # 116 디스크 용량 감시하기
@@ -305,6 +335,12 @@ do
   fi
 done < "$tmpfile"
 ```
+- `df` : 디스크 사용량을 표시하는 명령어
+  - `-P` : POSIX 출력 형식 사용하며, 파일 시스템명이 길어도 한줄로 표시함
+  - `-h` : 사람이 읽기 쉬운 형식으로 용량 표시
+  - `-k` : 1024바이트 단위로 용량 표시
+  - `-i` : inode 정보 표시
+  - `-l` : 로컬 파일시스템만 표시
 
 # 117 메모리 스왑 감시하기
 ```bash
@@ -326,6 +362,46 @@ if [ "$swapcount" -ge "$swapcount_limit" ]; then
   /home/user1/bin/alert.sh
 fi
 ```
+- Swap-in(보조장치 -> 메모리), Swap-out(메모리 -> 보조장치)이 자주 발생할 경우 메모리가 부족하다고 판단할 수 있다.
+- `vmstat` : 서버의 현재 가상 메모리 상태를 표시 
+  - `vmstat [options] [delay [count]]` : 측정할 횟수와 지연시간을 지정해 표시한다. 
+  - linux : si, so로 표시됨
+  - FreeBSD : pi, po로 표시됨 
+  - Mac : `vmstat` 명령어 대신 `vm_stat` 명령어 사용 
+- 같이보기 : `vmstat` 에서 표시되는 정보
+  ```
+   Procs
+       r: The number of runnable processes (running or waiting for run time).
+       b: Number of processes blocked waiting for I/O to complete.
+
+   Memory
+       swpd: the amount of virtual memory used.
+       free: the amount of idle memory.
+       buff: the amount of memory used as buffers.
+       cache: the amount of memory used as cache.
+       inact: the amount of inactive memory.  (-a option)
+       active: the amount of active memory.  (-a option)
+
+   Swap
+       si: Amount of memory swapped in from disk (/s).
+       so: Amount of memory swapped to disk (/s).
+
+   IO
+       bi: Blocks received from a block device (blocks/s).
+       bo: Blocks sent to a block device (blocks/s).
+
+   System
+       in: The number of interrupts per second, including the clock.
+       cs: The number of context switches per second.
+
+   CPU
+       These are percentages of total CPU time.
+       us: Time spent running non-kernel code.  (user time, including nice time)
+       sy: Time spent running kernel code.  (system time)
+       id: Time spent idle.  Prior to Linux 2.5.41, this includes IO-wait time.
+       wa: Time spent waiting for IO.  Prior to Linux 2.5.41, included in idle.
+       st: Time stolen from a virtual machine.  Prior to Linux 2.6.11, unknown.
+  ```
 
 
 # 118 CPU 사용률 감시하기 
@@ -351,7 +427,45 @@ if [ "$is_alert" -eq 1 ]; then
   /home/user1/bin/alert.sh
 fi
 ```
+- `mpstat` : 프로세스와 관련된 통계 정보를 출력
+  - `mpstat [ options ] [ <interval> [ <count> ] ]` : vmstat와 비슷하게 측정 횟수 및 지연 시간을 지정해 사용
+  - Mac : `iostat` 명령어를 대신 사용함 
+  - linux : 패키지가 설치 되어 있지 않을 경우 `sysstat` 패키지를 설치
+- 같이보기 : `mpstat`에서 표시되는 정보
+  ```
+  CPU
+      Processor number. The keyword all indicates that statistics are calculated as averages among all processors.
 
+  %usr
+      Show the percentage of CPU utilization that occurred while executing at the user level (application).
+
+  %nice
+      Show the percentage of CPU utilization that occurred while executing at the user level with nice priority.
+
+  %sys
+      Show the percentage of CPU utilization that occurred while executing at the system level (kernel). Note that this does not include time spent servicing hardware and software interrupts.
+
+  %iowait
+      Show the percentage of time that the CPU or CPUs were idle during which the system had an outstanding disk I/O request.
+
+  %irq
+      Show the percentage of time spent by the CPU or CPUs to service hardware interrupts.
+
+  %soft
+      Show the percentage of time spent by the CPU or CPUs to service software interrupts.
+
+  %steal
+      Show the percentage of time spent in involuntary wait by the virtual CPU or CPUs while the hypervisor was servicing another virtual processor.
+
+  %guest
+      Show the percentage of time spent by the CPU or CPUs to run a virtual processor.
+
+  %gnice
+      Show the percentage of time spent by the CPU or CPUs to run a niced guest.
+
+  %idle
+      Show the percentage of time that the CPU or CPUs were idle and the system did not have an outstanding disk I/O request.
+  ```
 # 119 웹 페이지 변경 감시하기 
 ```bash
 #!/bin/sh
@@ -381,6 +495,7 @@ fi
 
 mv -f "$newfile" "$oldfile"
 ```
+- `TIP` : 웹 페이지 변경을 감시하기 위해서 매번 파일을 내려받이 이전 파일과 비교를 통해 확인할 수 있음
 
 # 120 MySQL 데이터베이스 백업하기 
 ```bash
