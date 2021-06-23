@@ -545,3 +545,113 @@ fi
   - 0 : 같음
   - 1 : 파일 다름
   - 2 : 에러 발생
+
+
+# 121 MySQL 레플리케이션 감시하기
+```bash
+#!/bin/sh
+
+# 데이터베이스 접속 설정. 슬레이브 서버에 접속
+DBHOST="192.168.11.5"
+DBUSER="operator"
+DBPASS="PASSWORD"
+
+# mysql 명령어 경로 지정과 임시 파일 정의
+MYSQL="/usr/bin/mysql"
+resulttmp="tmp.$$"
+
+# SHOW SSLAVE STATUS 실행 결과를 임시 파일에 출력
+$MYSQL -h "${DBHOST}" -u "${DBUSER}" -p"${DBPASS}" -e "SHOW SLAVE STATUS \G" > $resulttmp
+
+# 레플리케이션 상태 관련 파라미터 추출
+Slave_IO_Running=$(awk '/Slave_IO_Running:/ {print $2}' "$resulttmp")
+Slave_SQL_Running=$(awk '/Slave_SQL_Running:/ {print $2}' "$resulttmp")
+Last_IO_Error=$(grep 'Last_IO_Error:' "$resulttmp" | sed 's/^ *//g')
+Last_SQL_Error=$(grep 'Last_SQL_Error:' "$resulttmp" | sed 's/^ *//g')
+
+# 현재시각을 [2015/02/01 13:15:12] 형식으로 조합
+date_str=$(date '+%Y/%m/%d %H:%M:%S')
+
+# Slave-IO_Running과 Slave_SQL_Running이 둘 다 YES 아니면 에러 
+if [ "$Slave_IO_Running" = "YES" -a "$Slave_SQL_Running" = "YES" ]; then
+  echo "[$date_str] STATUS OK"
+else
+  echo "[$date_str] STATUS NG"
+  echo "Slave_IO_Running: $Slave_IO_Running"
+  echo "Slave_SQL_Running: $Slave_SQL_Running"
+  echo "Last_IO_Running: $Last_IO_Running"
+  echo "Last_SQL_Running: $Last_SQL_Running"
+
+  /home/user1/bin/alert.sh
+fi
+
+rm -f "$resulttmp"
+```
+- mysql 명령어를 이용해 파일에 상태를 저장해 Parsing 후 현재 상태를 출력해준다. 
+- `TIP` : 암호가 포함된 스크립트일 경우, 파일 권한을 최소한으로 해서 관리한다. 
+
+# 122 MySQL 테이블을 CSV로 출력하기 
+```bash
+#!/bin/sh
+
+# 데이터베이스 접속 설정. 슬레이브 서버에 접속
+DBHOST="192.168.11.5"
+DBUSER="operator"
+DBPASS="PASSWORD"
+
+# mysql 명령어 경로 지정과 임시 파일 정의
+MYSQL="/usr/bin/mysql"
+
+# CSV 파일 출력 경로와 리포트 작성용 SQL문 파일명 지정
+csv_outputdir="/home/user1/output"
+sqlfile="/home/user1/bin/select.sql"
+
+# SQL 파일 확인 
+if [ ! -f "$sqlfile" ]; then
+  echo "SQL 파일이 존재하지 않습니다: $sqlfile" >&2
+  exit 1
+fi
+
+# CSV 파일 출력용 디렉토리 확인
+if [ ! -d "$csv_outputdir" ]; then
+  echo "CSV 출력용 디렉토리가 존재하지 않습니다: $csv_outputdir" >&2
+  exit 1
+fi
+
+# 현재시각을 [20150201] 형식으로 조합
+today=$(date '+%Y%m%d')
+
+# CSV 출력, -N으로 컬럼명 생략 -> tr 명령어로 탭을 쉼표로 변환
+$MYSQL -h "${DBHOST}" -u "${DBUSER}" -p"${DBPASS}" -D "${DBNAME}" -N < "$sqlfile" \
+  | tr "\t" "," > "${csv_outputdir}/data-${today}.csv"
+```
+- 이것 또한 mysql 명령어를 이용해서 출력되는 쿼리 결과를 csv로 전환해 줌 
+
+
+# 123 로그 출력을 감시해서 로그에 특정 문자열이 있으면 경고하기 
+```bash
+#!/bin/sh
+
+# 감시 대상 로그 파일명 설정 
+logfile="/var/log/myapp/application.log"
+
+# tail 명령어로 로그 감시 
+#  * -F 실시간 감시
+#  * -n 0 추가분만 표시 
+tail -F -n 0 "$logfile" | \
+while read line 
+do
+  # 로그에서 일치하는 문자열이 있으면 경고 출력 
+  case "$line" in 
+    *"File not found"*)
+      echo "!주의! 파일을 찾지 못했습니다 : $line"
+      ;;
+    *"Application Error"*)
+      echo "!경고! 애플리케이션 이상 : $line"
+      ;;
+  esac
+done
+```
+- tail 명령어를 이용해서 업데이트 되는 신규 라인을 읽어 들여 경고 메시지를 출력한다. 
+
+
